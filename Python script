@@ -1,0 +1,93 @@
+import pandas as pd
+import dns.resolver
+
+# Define the function to retrieve DKIM records
+def get_dkim_record(domain):
+dkim_selectors = [
+'google', # Google
+'selector1', # Microsoft
+'selector2', # Microsoft
+'mxvault', # Global Micro
+'mandrill', # Mandrill
+'sendgrid', # SendGrid
+'s1', # SendinBlue
+'pp', # Postmark
+'dkim', # Hetzner
+'amazonses', # Amazon SES
+'key1', # Campaign Monitor
+'spf', # SPF Record
+'yahoo', # Yahoo
+'sparkpost', # SparkPost
+'zoho', # Zoho
+'authsmtp', # AuthSMTP
+'dynect', # DynECT Email Delivery
+'socketlabs', # SocketLabs
+'turbosmtp', # TurboSMTP
+'vzrelay', # Verizon
+'emarsys', # Emarsys
+'yandex', # Yandex.Mail
+'postmark', # Postmark
+'emarsys1', # Emarsys (alternative selector)
+'emarsys2', # Emarsys (alternative selector)
+'emarsys3' # Emarsys (alternative selector)
+# Add more DKIM selectors here
+]
+
+dkim_records = []
+dkim_selector = None
+
+for selector in dkim_selectors:
+record_name = f"{selector}._domainkey.{domain}"
+try:
+response = dns.resolver.resolve(record_name, 'TXT')
+for rdata in response:
+for txt_string in rdata.strings:
+dkim_records.append(txt_string.decode())
+dkim_selector = selector
+break
+except dns.resolver.NXDOMAIN:
+continue
+
+if dkim_selector is None:
+advisory = "No DKIM record found."
+else:
+advisory = "DKIM record found."
+
+return {
+"Name": domain,
+"DkimRecord": dkim_records,
+"DkimSelector": dkim_selector,
+"DKIMAdvisory": advisory
+}
+
+# Specify the input file path and output file path
+input_file_path = r"C:\\Users\\Hellfire\\Documents\\domainlist.xlsx"
+output_file_path = r"C:\\Users\\Hellfire\\Documents\\outputlist.xlsx"
+
+# Load the input Excel file
+input_data = pd.read_excel(input_file_path)
+
+# Create a list to store the output data
+output_data = []
+
+# Process each domain from the input Excel file
+for _, row in input_data.iterrows():
+domain = row["Domain"]
+
+# Retrieve DKIM records for the domain
+try:
+dkim_records = get_dkim_record(domain)
+
+# Add the output data to the list
+output_data.append(dkim_records)
+except Exception as e:
+print(f"Error processing domain '{domain}': {str(e)}")
+
+# Convert the output data to a DataFrame
+output_df = pd.DataFrame(output_data)
+
+# Export the output data to Excel
+output_df.to_excel(output_file_path, index=False)
+
+# Output the completion message
+print(f"Output file generated successfully at: {output_file_path}")
